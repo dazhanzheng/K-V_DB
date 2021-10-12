@@ -11,8 +11,8 @@
 class KVDBHandler{
 public:
     char* PATH;
-    int fd=0;
-    FILE* fp =nullptr;
+    int fd;
+    FILE* fp;
     //Constructor, creates DB handler
     //@param db_file {const std::string&} path of the append-only file for database.
     KVDBHandler(const std::string& db_file);
@@ -21,7 +21,7 @@ public:
         close(fd);
         fclose(fp);
     }
-    //int get(const std::string& key, std::string& value) const;
+    int get(const std::string& key, std::string& value) const;
     int set(const std::string& key,const std::string& value);
 };
 
@@ -31,8 +31,11 @@ int main(){
     std::string key,value;
     std::cin >> key >> value;
     const std::string ke=key,va = value;
-    KVDBHandler test("../test.txt");
-    test.set(ke, va);
+    KVDBHandler test("../K-V_DB/test.txt");
+    //test.set(ke, va);
+    std::string strout;
+    test.get(ke, strout);
+    std::cout << strout;
     return 0;
 }
 
@@ -68,15 +71,33 @@ int KVDBHandler::set(const std::string &key, const std::string &value){
     return true;
 }
 
-/*int KVDBHandler::get(const std::string& key, std::string& value) const{
-    std::string sub_key,sub_value;
+int KVDBHandler::get(const std::string& key, std::string& value) const{
+    char* sub_key = new char[32];
+    char* sub_value = new char[256];
     fseek(fp,0,SEEK_SET);
     int len_key,len_value;
     do{
-        fread(&len_key,4,1,fp);
-        fread(&len_value,4,1,fp);
-        fread(sub_key,len_key
+        if(fread(&len_key,4,1,fp)!=4){
+            std::cout << "read key length succeeded\n";
+        }
+        else std::cout << "fuckfuckfuck!\n";
+        if(fread(&len_value,4,1,fp)!=4){
+            std::cout << "read value length succeeded\n";
+        }
+        if(fread(sub_key,len_key,1,fp)!=len_key){
+            std::cout << "read key succeeded\n";
+        }
+        if((std::string)sub_key == key){
+            fread(sub_value,len_value,1,fp);
+            std::cout << "read value succeeded\n";
+            break;
+        }
+        else {
+            fseek(fp,len_value,SEEK_CUR);
+            std::cout << "NOT THIS!!!\n";
+        }
     }
     while(1);
+    value = (std::string)sub_value;
     return true;
-}*/
+}
