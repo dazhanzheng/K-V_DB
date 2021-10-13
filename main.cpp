@@ -23,6 +23,7 @@ public:
     }
     int get(const std::string& key, std::string& value) const;
     int set(const std::string& key,const std::string& value);
+    int del(const std::string& key);
 };
 
 
@@ -71,33 +72,64 @@ int KVDBHandler::set(const std::string &key, const std::string &value){
     return true;
 }
 
+
+
 int KVDBHandler::get(const std::string& key, std::string& value) const{
+    //allocate space for the buffer (XD)
     char* sub_key = new char[32];
     char* sub_value = new char[256];
+    fseek(fp,0,SEEK_END);
+    int index_endl = ftell(fp);
     fseek(fp,0,SEEK_SET);
-    int len_key,len_value;
+    int len_key,len_value,len_result=0;
     do{
-        if(fread(&len_key,4,1,fp)!=4){
-            std::cout << "read key length succeeded\n";
+        if(fread(&len_key,4,1,fp)==1){
+            //std::cout << "read key length succeeded\n";
         }
-        else std::cout << "fuckfuckfuck!\n";
-        if(fread(&len_value,4,1,fp)!=4){
-            std::cout << "read value length succeeded\n";
+        if(fread(&len_value,4,1,fp)==1){
+            //std::cout << "read value length succeeded\n";
         }
-        if(fread(sub_key,len_key,1,fp)!=len_key){
-            std::cout << "read key succeeded\n";
+        if(fread(sub_key,len_key,1,fp)==1){ 
+            //std::cout << "read key succeeded\n";
         }
         if((std::string)sub_key == key){
-            fread(sub_value,len_value,1,fp);
-            std::cout << "read value succeeded\n";
-            break;
+            if(len_value!=-1){
+                fread(sub_value,len_value,1,fp);
+                len_result = len_value;
+            }
+            else{
+                len_result = 0;
+                fseek(fp,4,SEEK_CUR);
+            }
+            //std::cout << "read value succeeded\n";
         }
         else {
+            if(len_value!=-1)
             fseek(fp,len_value,SEEK_CUR);
-            std::cout << "NOT THIS!!!\n";
+            else fseek(fp,4,SEEK_CUR);
+            //std::cout << "NOT THIS!!!\n";
         }
     }
-    while(1);
-    value = (std::string)sub_value;
+    while(ftell(fp)!=index_endl);
+    if(len_result!=0){   
+        value.assign(sub_value,len_result);
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+int KVDBHandler::del(const std::string& key){
+    //no legality check
+    const char* c_key = new char[32];
+    const char* c_value = new char[4];
+    c_key = key.c_str();
+    const int len_key = key.length();
+    const int len_value = -1;
+    fwrite(&len_key,4,1,fp);
+    fwrite(&len_value,4,1,fp);
+    fwrite(c_key,len_key,1,fp);
+    fwrite(c_value,4,1,fp);
     return true;
 }
