@@ -13,16 +13,22 @@ public:
     char* PATH;
     int fd;
     FILE* fp;
+    
     //Constructor, creates DB handler
     //@param db_file {const std::string&} path of the append-only file for database.
     KVDBHandler(const std::string& db_file);
+    
     //Closes DB handler
     ~KVDBHandler(){
         close(fd);
-        fclose(fp);
     }
+    // wait to create API2
+    //if key not found ,return false;
     int get(const std::string& key, std::string& value) const;
+    int get(const std::string& key) const;
+    //
     int set(const std::string& key,const std::string& value);
+    //
     int del(const std::string& key);
 };
 
@@ -35,15 +41,17 @@ int main(){
     KVDBHandler test("../K-V_DB/test.txt");
     //test.set(ke, va);
     std::string strout;
-    test.get(ke, strout);
+    //test.del(key);
+    if(test.get(ke, strout))
     std::cout << strout;
+    else std::cout << "didn't find it" << std::endl;
     return 0;
 }
 
 KVDBHandler::KVDBHandler(const std::string &db_file) {
-    int len = db_file.length();
     const char* path = db_file.c_str();
-    
+
+    //if not exist,create it and open
     fd = open(path,O_RDWR|O_APPEND);
     if(fd==-1){
         fd = creat(path,0);
@@ -55,58 +63,119 @@ KVDBHandler::KVDBHandler(const std::string &db_file) {
 }
 
 int KVDBHandler::set(const std::string &key, const std::string &value){
-    //no legality check
+    //NEED: legality check
+
+    //convert const string to const char*
     const char* c_key = new char[32];
     const char* c_value = new char[256];
     c_key = key.c_str();
     c_value = value.c_str();
+
     const int len_key = key.length();
     const int len_value = value.length();
+
     write(fd,&len_key,4);
     write(fd,&len_value,4);
     write(fd,c_key,len_key);
     write(fd,c_value,len_value);
+
     return true;
 }
 
 
 
 int KVDBHandler::get(const std::string& key, std::string& value) const{
-    //allocate space for the buffer (XD)
+    //allocate space for the buffer (XD),but  useless
     char* sub_key = new char[32];
     char* sub_value = new char[256];
-    int index_endl = lseek(fd,0,SEEK_END);
+    //store the end of file;
+    int eof = lseek(fd,0,SEEK_END);
     lseek(fd,0,SEEK_SET);
     int len_key,len_value,len_result=0;
-    do{
-        if(read(fd,&len_key,4)==4)
-        std::cout << "read len_key succeeded\n";
-        if(read(fd,&len_value,4)==4)
-        std::cout << "read len_value succeeded\n";
-        if(read(fd,sub_key,len_key)==len_key)
-        std::cout << "read sub_key succeeded\n";
+    
+    while(lseek(fd,0,SEEK_CUR)!=eof){
+        /*if(read(fd,&len_key,4)==4)
+         *std::cout << "read len_key succeeded\n";
+
+         *if(read(fd,&len_value,4)==4)
+         *std::cout << "read len_value succeeded\n";
+
+         *if(read(fd,sub_key,len_key)==len_key)
+         *std::cout << "read sub_key succeeded\n";
+        */
+        read(fd,&len_key,4);
+        read(fd,&len_value,4);
+        read(fd,sub_key,len_key);
         if((std::string)sub_key == key){
             if(len_value!=-1){
-                if(read(fd,sub_value,len_value)==len_value)
-                std::cout << "read sub_value succeeded\n";
+                read(fd,sub_value,len_value);
+                //std::cout << "read sub_value succeeded\n";
                 len_result = len_value;
             }
             else{
                 len_result = 0;
                 lseek(fd,4,SEEK_CUR);
-                std::cout << "well, this is empty\n";
+                //std::cout << "well, this is empty\n";
             }
         }
         else{
             if(len_value!=-1)
             lseek(fd,len_value,SEEK_CUR);
             else lseek(fd,4,SEEK_CUR);
-            std::cout << "NOT THIS!!!\n";
+            //std::cout << "NOT THIS!!!\n";
         }
     }
-    while(lseek(fd,0,SEEK_CUR)!=index_endl);
     if(len_result!=0){   
         value.assign(sub_value,len_result);
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+int KVDBHandler::get(const std::string& key) const{
+    //allocate space for the buffer (XD),but  useless
+    char* sub_key = new char[32];
+    char* sub_value = new char[256];
+    //store the end of file;
+    int eof = lseek(fd,0,SEEK_END);
+    lseek(fd,0,SEEK_SET);
+    int len_key,len_value,len_result=0;
+    
+    while(lseek(fd,0,SEEK_CUR)!=eof){
+        /*if(read(fd,&len_key,4)==4)
+         *std::cout << "read len_key succeeded\n";
+
+         *if(read(fd,&len_value,4)==4)
+         *std::cout << "read len_value succeeded\n";
+
+         *if(read(fd,sub_key,len_key)==len_key)
+         *std::cout << "read sub_key succeeded\n";
+        */
+        read(fd,&len_key,4);
+        read(fd,&len_value,4);
+        read(fd,sub_key,len_key);
+        if((std::string)sub_key == key){
+            if(len_value!=-1){
+                lseek(fd,len_value,SEEK_CUR);
+                //std::cout << "read sub_value succeeded\n";
+                len_result = len_value;
+            }
+            else{
+                len_result = 0;
+                lseek(fd,4,SEEK_CUR);
+                //std::cout << "well, this is empty\n";
+            }
+        }
+        else{
+            if(len_value!=-1)
+            lseek(fd,len_value,SEEK_CUR);
+            else lseek(fd,4,SEEK_CUR);
+            //std::cout << "NOT THIS!!!\n";
+        }
+    }
+    if(len_result!=0){
         return true;
     }
     else{
