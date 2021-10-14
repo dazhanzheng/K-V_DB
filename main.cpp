@@ -42,19 +42,16 @@ int main(){
 
 KVDBHandler::KVDBHandler(const std::string &db_file) {
     int len = db_file.length();
-    PATH = new char[len];
-    for(int i=0;i<len;i++){
-        PATH[i] = db_file[i];
-    }
-    /*fd = open(PATH,O_RDWR|O_CREAT|O_APPEND);
+    const char* path = db_file.c_str();
+    
+    fd = open(path,O_RDWR|O_APPEND);
     if(fd==-1){
-        fd = creat(PATH,0);
+        fd = creat(path,0);
         if(fd==-1)
         {
             std::cout << "PATH WRONG!\n";
         }
-    }*/
-    fp = fopen(PATH,"a+");
+    }
 }
 
 int KVDBHandler::set(const std::string &key, const std::string &value){
@@ -65,10 +62,10 @@ int KVDBHandler::set(const std::string &key, const std::string &value){
     c_value = value.c_str();
     const int len_key = key.length();
     const int len_value = value.length();
-    fwrite(&len_key,4,1,fp);
-    fwrite(&len_value,4,1,fp);
-    fwrite(c_key,len_key,1,fp);
-    fwrite(c_value,len_value,1,fp);
+    write(fd,&len_key,4);
+    write(fd,&len_value,4);
+    write(fd,c_key,len_key);
+    write(fd,c_value,len_value);
     return true;
 }
 
@@ -78,39 +75,36 @@ int KVDBHandler::get(const std::string& key, std::string& value) const{
     //allocate space for the buffer (XD)
     char* sub_key = new char[32];
     char* sub_value = new char[256];
-    fseek(fp,0,SEEK_END);
-    int index_endl = ftell(fp);
-    fseek(fp,0,SEEK_SET);
+    int index_endl = lseek(fd,0,SEEK_END);
+    lseek(fd,0,SEEK_SET);
     int len_key,len_value,len_result=0;
     do{
-        if(fread(&len_key,4,1,fp)==1){
-            //std::cout << "read key length succeeded\n";
-        }
-        if(fread(&len_value,4,1,fp)==1){
-            //std::cout << "read value length succeeded\n";
-        }
-        if(fread(sub_key,len_key,1,fp)==1){ 
-            //std::cout << "read key succeeded\n";
-        }
+        if(read(fd,&len_key,4)==4)
+        std::cout << "read len_key succeeded\n";
+        if(read(fd,&len_value,4)==4)
+        std::cout << "read len_value succeeded\n";
+        if(read(fd,sub_key,len_key)==len_key)
+        std::cout << "read sub_key succeeded\n";
         if((std::string)sub_key == key){
             if(len_value!=-1){
-                fread(sub_value,len_value,1,fp);
+                if(read(fd,sub_value,len_value)==len_value)
+                std::cout << "read sub_value succeeded\n";
                 len_result = len_value;
             }
             else{
                 len_result = 0;
-                fseek(fp,4,SEEK_CUR);
+                lseek(fd,4,SEEK_CUR);
+                std::cout << "well, this is empty\n";
             }
-            //std::cout << "read value succeeded\n";
         }
-        else {
+        else{
             if(len_value!=-1)
-            fseek(fp,len_value,SEEK_CUR);
-            else fseek(fp,4,SEEK_CUR);
-            //std::cout << "NOT THIS!!!\n";
+            lseek(fd,len_value,SEEK_CUR);
+            else lseek(fd,4,SEEK_CUR);
+            std::cout << "NOT THIS!!!\n";
         }
     }
-    while(ftell(fp)!=index_endl);
+    while(lseek(fd,0,SEEK_CUR)!=index_endl);
     if(len_result!=0){   
         value.assign(sub_value,len_result);
         return true;
@@ -127,9 +121,9 @@ int KVDBHandler::del(const std::string& key){
     c_key = key.c_str();
     const int len_key = key.length();
     const int len_value = -1;
-    fwrite(&len_key,4,1,fp);
-    fwrite(&len_value,4,1,fp);
-    fwrite(c_key,len_key,1,fp);
-    fwrite(c_value,4,1,fp);
+    write(fd,&len_key,4);
+    write(fd,&len_value,4);
+    write(fd,c_key,len_key);
+    write(fd,c_value,4);
     return true;
 }
