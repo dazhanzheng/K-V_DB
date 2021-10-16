@@ -2,9 +2,11 @@
 // Created by dazhanzheng on 2021/10/10.
 //
 
+
+#include<iostream>
 #include<unistd.h>
 #include<fcntl.h>
-#include<iostream>
+
 
 
 
@@ -71,11 +73,11 @@ int KVDBHandler::set(const std::string &key, const std::string &value){
     c_key = key.c_str();
     c_value = value.c_str();
 
-    const int len_key = key.length();
-    const int len_value = value.length();
+    int32_t len_key = key.length();
+    int32_t len_value = value.length();
 
-    write(fd,&len_key,4);
-    write(fd,&len_value,4);
+    write(fd,&len_key,sizeof(len_key));
+    write(fd,&len_value,sizeof(len_value));
     write(fd,c_key,len_key);
     write(fd,c_value,len_value);
 
@@ -85,13 +87,13 @@ int KVDBHandler::set(const std::string &key, const std::string &value){
 
 
 int KVDBHandler::get(const std::string& key, std::string& value) const{
-    //allocate space for the buffer (XD),but  useless
+    //TODO:change the char* to an RAII class
     char* sub_key = new char[32];
     char* sub_value = new char[256];
-    //store the end of file;
+    
     int eof = lseek(fd,0,SEEK_END);
     lseek(fd,0,SEEK_SET);
-    int len_key,len_value,len_result=0;
+    int32_t len_key,len_value,len_result=0;
     
     while(lseek(fd,0,SEEK_CUR)!=eof){
         /*if(read(fd,&len_key,4)==4)
@@ -103,8 +105,8 @@ int KVDBHandler::get(const std::string& key, std::string& value) const{
          *if(read(fd,sub_key,len_key)==len_key)
          *std::cout << "read sub_key succeeded\n";
         */
-        read(fd,&len_key,4);
-        read(fd,&len_value,4);
+        read(fd,&len_key,sizeof(len_key));
+        read(fd,&len_value,sizeof(len_value));
         read(fd,sub_key,len_key);
         if((std::string)sub_key == key){
             if(len_value!=-1){
@@ -113,19 +115,19 @@ int KVDBHandler::get(const std::string& key, std::string& value) const{
                 len_result = len_value;
             }
             else{
-                len_result = 0;
-                lseek(fd,4,SEEK_CUR);
+                len_result = false;
+                lseek(fd,sizeof(int32_t),SEEK_CUR);
                 //std::cout << "well, this is empty\n";
             }
         }
         else{
             if(len_value!=-1)
             lseek(fd,len_value,SEEK_CUR);
-            else lseek(fd,4,SEEK_CUR);
+            else lseek(fd,sizeof(int32_t),SEEK_CUR);
             //std::cout << "NOT THIS!!!\n";
         }
     }
-    if(len_result!=0){   
+    if(len_result!=false){   
         value.assign(sub_value,len_result);
         return true;
     }
@@ -139,9 +141,9 @@ int KVDBHandler::get(const std::string& key) const{
     char* sub_key = new char[32];
     char* sub_value = new char[256];
     //store the end of file;
-    int eof = lseek(fd,0,SEEK_END);
+    int32_t eof = lseek(fd,0,SEEK_END);
     lseek(fd,0,SEEK_SET);
-    int len_key,len_value,len_result=0;
+    int32_t len_key,len_value,len_result=0;
     
     while(lseek(fd,0,SEEK_CUR)!=eof){
         /*if(read(fd,&len_key,4)==4)
@@ -153,8 +155,8 @@ int KVDBHandler::get(const std::string& key) const{
          *if(read(fd,sub_key,len_key)==len_key)
          *std::cout << "read sub_key succeeded\n";
         */
-        read(fd,&len_key,4);
-        read(fd,&len_value,4);
+        read(fd,&len_key,sizeof(len_key));
+        read(fd,&len_value,sizeof(len_value));
         read(fd,sub_key,len_key);
         if((std::string)sub_key == key){
             if(len_value!=-1){
@@ -163,19 +165,19 @@ int KVDBHandler::get(const std::string& key) const{
                 len_result = len_value;
             }
             else{
-                len_result = 0;
-                lseek(fd,4,SEEK_CUR);
+                len_result = false;
+                lseek(fd,sizeof(int32_t),SEEK_CUR);
                 //std::cout << "well, this is empty\n";
             }
         }
         else{
             if(len_value!=-1)
             lseek(fd,len_value,SEEK_CUR);
-            else lseek(fd,4,SEEK_CUR);
+            else lseek(fd,sizeof(int32_t),SEEK_CUR);
             //std::cout << "NOT THIS!!!\n";
         }
     }
-    if(len_result!=0){
+    if(len_result!=false){
         return true;
     }
     else{
@@ -190,9 +192,9 @@ int KVDBHandler::del(const std::string& key){
     c_key = key.c_str();
     const int len_key = key.length();
     const int len_value = -1;
-    write(fd,&len_key,4);
-    write(fd,&len_value,4);
+    write(fd,&len_key,sizeof(len_key));
+    write(fd,&len_value,sizeof(len_value));
     write(fd,c_key,len_key);
-    write(fd,c_value,4);
+    write(fd,c_value,sizeof(int32_t));
     return true;
 }
