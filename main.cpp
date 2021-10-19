@@ -27,7 +27,7 @@ public:
     // wait to create API2
     //if key not found ,return false;
     int get(const std::string& key, std::string& value) const;
-    int get(const std::string& key) const;
+    int check(const std::string& key) const;
     //
     int set(const std::string& key,const std::string& value);
     //
@@ -136,7 +136,7 @@ int KVDBHandler::get(const std::string& key, std::string& value) const{
     }
 }
 
-int KVDBHandler::get(const std::string& key) const{
+int KVDBHandler::check(const std::string& key) const{
     //allocate space for the buffer (XD),but  useless
     char* sub_key = new char[32];
     char* sub_value = new char[256];
@@ -188,7 +188,7 @@ int KVDBHandler::get(const std::string& key) const{
 int KVDBHandler::del(const std::string& key){
     //no legality check
     const char* c_key = new char[32];
-    const char* c_value = new char[4];
+    const char* c_value = new char[256];
     c_key = key.c_str();
     const int len_key = key.length();
     const int len_value = -1;
