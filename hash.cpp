@@ -1,26 +1,88 @@
+/*-----------------------------
+	
+    Github:dazhanzheng
+    Email:1365950682@qq.com
+
+-------------------------------*/
+
 #include<iostream>
 #include<unistd.h>
 #include"hash.h"
+#define IniSize 512
 
-int HashMap::set(const uint32_t dsthash,const uint32_t dstoffset){
+
+HashMap::HashMap(int filedescripter){		//i
     
-    uint32_t dest = dsthash & 0x000001FF;
-    HashNode *ptr = &table[dest];
-    while(1){
-        if(ptr->hash_code == 0){
-            ptr->hash_code = dsthash;
-            ptr->offset = dstoffset;
-            return 0;
-        }
-        else{
-            while(ptr->next!=nullptr){ptr = ptr->next;}
-        }
-    }
-    return 0;
+    fd = filedescripter;
+    Mapsize = IniSize;
+    Occupancy = 0;
+    MapHead = nullptr;
+    make();
 }
 
-int HashMap::search(const uint32_t dsthash,uint32_t* dstoffset){
+HashMap::~HashMap(){				//release occupation;
+   
+    for(int i=0;i<MapSize;i++){
+	
+	HashNode* ptr = (MapHead+i)->next;
+	HashNode* temp = nullptr;
+	
+	while(ptr != nullptr){
+	    temp = ptr;
+	    ptr = ptr->next;
+	    delete temp;
+	}
+    }
+    delete[] MapHead;
+}
 
+int HashMap::expand(){				//call make() to distribute new resources; 
+    MapSize *= 2;
+    make();
+}
+
+int HashMap::make(){
+   
+     if(MapHead != nullptr){			//if MapHead exist,release;
+        for(int i=0;i<MapSize;i++){
+	
+	    HashNode* ptr = (MapHead+i)->next;
+	    HashNode* temp = nullptr;
+	
+	    while(ptr != nullptr){
+	        temp = ptr;
+	        ptr = ptr->next;
+	        delete temp;
+	    }
+        }
+        delete[] MapHead;
+    }
+
+    MapHead = new HashNode[MapSize];		//distribute space in heap;
+    //TODO: Traverse whole file and set;
+    
+}
+
+int HashMap::set(const std::string &key,const uint32_t dstOffset){
+    
+    uint32_t desthash = Hash(key.c_str());
+    uint32_t destIndex = dsthash & (MapSize-1);
+    HashNode* ptr = MapHead + destIndex;
+    
+    while(ptr->next != nullptr){
+	if(ptr->next->hash_code == desthash)
+	    if(ptr->next->key == key){
+	    	ptr->next->offset = dstOffset;
+		return true;
+	    }
+	ptr = ptr->next;
+    }
+    ptr->next = new HashNode;
+    ptr->next->init();    
+}
+
+int HashMap::search(const std::string &key,uint32_t* offsetArr,uint32_t* length){
+		
 }
 
 

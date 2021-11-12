@@ -1,21 +1,22 @@
 /*-----------------------------
 	
-    github:dazhanzheng
-    email:1365950682@qq.com
+    Github:dazhanzheng
+    Email:1365950682@qq.com
 
 -------------------------------*/
 
 #include<iostream>
-#include<unistd.h>
-#include<fcntl.h>
-
+#include"hash.h"
 
 class KVDBHandler{
 
 private:
+
     char* PATH;
     int fd;
+    
     int make_index();
+
 public:
     
     //API1
