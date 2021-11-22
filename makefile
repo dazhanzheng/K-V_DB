@@ -7,4 +7,4 @@ hash.o : hash.cpp
 
 .PHONY : clean
 clean : 
-	-rm  main.o kv.o hash.o
+	-rm kv main.o kv.o hash.o

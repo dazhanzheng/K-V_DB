@@ -4,6 +4,8 @@
     Email:1365950682@qq.com
 
 -------------------------------*/
+#ifndef HASH_H
+#define HASH_H
 
 #include<iostream>
 
@@ -11,19 +13,18 @@ class HashMap{					//HashMap in KV-DB;
 private:
 
     class HashNode{  				//Internal node struct for hash check;
-        private:
-	uint32_t hash_code;		
-        uint32_t offset;
-        HashNode* next;
-	std::string key;
-	
-	public:
-	HashNode(){
+    public:
+	 uint32_t hash_code;		
+	 uint32_t offset;
+       	 HashNode* next;
+	 std::string key;
+
+	 HashNode(){
 	    hash_code = 0;
 	    offset = 0;
 	    next = nullptr;
-	    key = 
-	}
+	    key = "NULL";
+	 }
     };
 
     int fd;
@@ -36,13 +37,16 @@ private:
     int make();					//Remake the Map based on MapSize,reset Occupancy;
 
 public:
-    HashMap(int filedescripter);
+    HashMap(int);
     ~HashMap();
-    int set( const std::string &key, const uint32_t dstoffset);
-    int search( const std::string &key, uint32_t* offset);
-     
+    
+    //API1
+    int set( const std::string&, const uint32_t);
+    int search( const std::string&, uint32_t* );
+    int del( const std::string&);
+
+    //internal hash_value function; 
+    unsigned int Hash( const char*) ;		//BKDR hash function;
 };
 
-unsigned int Hash(const char* str) ;	//BKDR hash function;
-
-
+#endif
