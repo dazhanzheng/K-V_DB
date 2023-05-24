@@ -10,6 +10,7 @@ void log(const std::string &message)
     std::time_t now_time = std::chrono::system_clock::to_time_t(now);
 
     std::string time_str = std::ctime(&now_time);
+    // Delete the last character of the string -> \n
     time_str.pop_back();
 
     std::ofstream log_file("../log/logs.txt", std::ios::app);
